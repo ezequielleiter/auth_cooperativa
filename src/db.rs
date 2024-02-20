@@ -1,14 +1,12 @@
 //Aca voy a definir los modelos de la DB
 use crate::{error::Error::*, handlers::CooperativaRequest, Cooperativa, Result};
-
+use std::env::var;
 // para manejar el tiempo usamos chrono
 use chrono::prelude::*;
 use futures::StreamExt;
-
 use mongodb::bson::{doc, document::Document, oid::ObjectId, Bson};
 use mongodb::{options::ClientOptions, Client, Collection};
 
-const DB_NAME: &str = "cooperativas_db";
 const COLL: &str = "cooperativas";
 
 const ID: &str = "_id";
@@ -26,9 +24,12 @@ pub struct DB{
 //Aca iniciamos la db
 impl DB {
     pub async fn init() -> Result<Self> {
-        let mut client_options = ClientOptions::parse("mongodb://localhost:27017").await?;
+        dotenvy::dotenv().ok();
+        let db_url = var("DB_URL").expect("Missing db url");
+        let db_name = var("DB_NAME").expect("Missing db name");
+        let mut client_options = ClientOptions::parse(&db_url).await?;
 
-        client_options.app_name = Some("cooperativas_db".to_string());
+        client_options.app_name = Some(db_name.to_string());
 
 
         Ok(Self{
@@ -104,7 +105,9 @@ impl DB {
     }
 
     fn get_collection(&self) -> Collection{
-        self.client.database(DB_NAME).collection(COLL)
+        dotenvy::dotenv().ok();
+        let db_name = var("DB_NAME").expect("Missing db name");
+        self.client.database(&db_name).collection(COLL)
     }
 
     fn doc_to_coop(&self, doc: &Document) -> Result<Cooperativa> {
