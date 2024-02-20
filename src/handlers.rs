@@ -1,6 +1,5 @@
 // tomo el type de webresult creado en main
 use crate::{db::DB, WebResult};
-use chrono::{DateTime, Utc};
 use serde::{Serialize, Deserialize};
 use warp::{reject, Reply, reply::json, http::StatusCode};
 
@@ -18,11 +17,8 @@ pub struct CooperativaRequest {
 
 
 pub async fn create_cooperativa_handler(body: CooperativaRequest, db: DB) -> WebResult<impl Reply>{
-    println!("{:?}", body);
-    db.create_cooperativa(&body).await.map_err(|e| reject::custom(e))?;
-    // aca mando el 200
-    // probar retornar la cooperativa creada
-    Ok(StatusCode::CREATED)
+    let result = db.create_cooperativa(&body).await.map_err(|e| reject::custom(e))?;
+    Ok(json(&result[0]))
 }
 
 pub async fn edit_cooperativa_handler(id: String, body: CooperativaRequest, db: DB) -> WebResult<impl Reply>{

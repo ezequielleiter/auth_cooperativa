@@ -53,20 +53,32 @@ impl DB {
     }
 
     // funciones de crear
-    pub async fn create_cooperativa(&self, entry: &CooperativaRequest) -> Result<()> {
-       
+    pub async fn create_cooperativa(&self, entry: &CooperativaRequest) -> Result<Vec<Cooperativa>> {  
         let doc = doc! {
             NAME: entry.name.clone(),
             NUM_SOCIOS: entry.num_socios as i32,
             ADDED_AT: Utc::now(),
             SOCIOS: entry.socios.clone(),
         };
-        println!("doc: {:?}", doc);
-        self.get_collection()
+        let inserted = self.get_collection()
             .insert_one(doc, None)
             .await
             .map_err(MonogoQueryError)?;
-        Ok(())
+        let filter = doc! {
+            "_id": inserted.inserted_id
+        };
+
+        let mut cursor = self.get_collection()
+            .find(filter, None)
+            .await
+            .map_err(MongoError)?;
+        let mut result: Vec<Cooperativa> = Vec::new();
+
+        while let Some(doc) = cursor.next().await {
+            result.push(self.doc_to_coop(&doc?)?)
+        }
+
+        Ok(result)
     }
 
     //funcion para eliminar
